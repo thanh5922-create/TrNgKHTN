@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Olympia Quiz - Hoàn Thiện (Có Nhạc)</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; }
+        body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #111; color: #fff; overflow: hidden; }
+        .screen { display: none; width: 100vw; height: 100vh; position: relative; }
+        .active { display: flex; flex-direction: column; justify-content: center; align-items: center; }
+
+        #screen-video video { width: 100vw; height: 100vh; object-fit: cover; }
+        .btn-skip-x { position: absolute; top: 20px; right: 25px; width: 45px; height: 45px; background: rgba(0, 0, 0, 0.6); border: 2px solid #fff; color: #fff; font-size: 24px; font-weight: bold; border-radius: 50%; cursor: pointer; z-index: 10; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
+        .btn-skip-x:hover { background: #e74c3c; border-color: #e74c3c; transform: scale(1.1); }
+
+        #screen-game { background: url('images/hinhnen.jpg') no-repeat center center/cover, linear-gradient(135deg, #1e3c72, #2a5298); padding: 20px; }
+        #screen-game::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.65); z-index: 1; }
+        .game-container { position: relative; z-index: 2; width: 90%; max-width: 900px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+
+        .start-logo { max-width: 80%; max-height: 250px; margin-bottom: 20px; filter: drop-shadow(0 0 15px rgba(241, 196, 15, 0.6)); border-radius: 15px; }
+
+        .logo-olympia {
+            background: linear-gradient(45deg, #1e3c72, #9b51e0, #2a5298, #7928ca, #1e3c72); background-size: 400% 400%; animation: gradient-flow 5s ease infinite;
+            padding: 40px 70px; border-radius: 50px 100px 40px 90px / 80px 40px 100px 50px; 
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7), inset 0 0 20px rgba(255,255,255,0.3); text-align: center; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; border: 4px solid #f1c40f; margin-bottom: 25px; transform: rotate(-2deg);
+        }
+        @keyframes gradient-flow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .text-duonglen { font-size: 24px; font-weight: bold; color: #ffffff; letter-spacing: 4px; text-transform: uppercase; text-shadow: 2px 2px 5px rgba(0,0,0,0.8); margin-bottom: 8px; }
+        .text-olympia { font-size: 50px; font-weight: 900; color: #f1c40f; text-transform: uppercase; text-shadow: 4px 4px 8px rgba(0,0,0,0.9); letter-spacing: 5px; }
+
+        #player-name {
+            padding: 15px 20px; font-size: 20px; border-radius: 12px; border: 3px solid #f1c40f; background: rgba(255,255,255,0.1);
+            color: #fff; text-align: center; margin-bottom: 20px; width: 350px; outline: none; transition: 0.3s; font-weight: bold;
+        }
+        #player-name::placeholder { color: #ccc; font-weight: normal; }
+        #player-name:focus { background: rgba(255,255,255,0.25); box-shadow: 0 0 15px rgba(241,196,15,0.6); }
+
+        .btn-start-box { background: linear-gradient(135deg, #e67e22, #f1c40f); color: #fff; font-size: 24px; font-weight: bold; padding: 15px 35px; border: 3px solid #fff; border-radius: 12px; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.5); transition: 0.3s; text-transform: uppercase; }
+        .btn-start-box:hover { transform: scale(1.05); box-shadow: 0 0 25px rgba(241, 196, 15, 0.8); }
+
+        .title-box { width: 100%; background: rgba(15, 23, 42, 0.9); border: 3px solid #f1c40f; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 0 20px rgba(241, 196, 15, 0.6); }
+        .title-box h1 { font-size: 28px; color: #f1c40f; text-transform: uppercase; }
+
+        .slots-container { display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; margin: 20px 0; width: 100%; }
+        .slot-box { height: 60px; border: 2px dashed #f1c40f; border-radius: 10px; background: rgba(255, 255, 255, 0.1); display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 20px; font-weight: bold; color: #2ecc71; cursor: pointer; transition: 0.2s; position: relative; }
+        .slot-box:hover { transform: translateY(-3px); }
+
+        .points-container { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; margin-bottom: 25px; }
+        .btn-point { background: rgba(52, 152, 219, 0.9); color: white; border: 2px solid #2980b9; padding: 12px 25px; font-size: 20px; font-weight: bold; border-radius: 10px; cursor: pointer; transition: 0.2s; }
+        .btn-point:hover { background: #f1c40f; color: #000; border-color: #f39c12; }
+
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; width: 100%; }
+        .btn-option { background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); color: white; padding: 15px; font-size: 18px; border-radius: 8px; cursor: pointer; text-align: left; transition: 0.2s; line-height: 1.4; }
+        .btn-option:hover { background: #e67e22; border-color: #fff; }
+
+        .end-board, .results-board { width: 100%; max-width: 800px; background: rgba(15, 23, 42, 0.95); border: 4px solid #f1c40f; border-radius: 20px; padding: 30px; box-shadow: 0 0 35px rgba(241, 196, 15, 0.7); display: flex; flex-direction: column; align-items: center; }
+        .end-board h1 { font-size: 45px; color: #f1c40f; margin-bottom: 10px; text-shadow: 2px 2px 5px #000; }
+        .huge-score { font-size: 80px; font-weight: bold; color: #2ecc71; text-shadow: 3px 3px 10px #000; margin-bottom: 30px; }
+        
+        .results-board h2 { font-size: 32px; color: #f1c40f; margin-bottom: 20px; }
+        #results-list { width: 100%; max-height: 40vh; overflow-y: auto; text-align: left; padding-right: 10px; margin-bottom: 15px; }
+        
+        #results-list::-webkit-scrollbar, #lb-list::-webkit-scrollbar { width: 8px; }
+        #results-list::-webkit-scrollbar-thumb, #lb-list::-webkit-scrollbar-thumb { background: #f1c40f; border-radius: 4px; }
+        #results-list::-webkit-scrollbar-track, #lb-list::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+        .result-item { background: rgba(255,255,255,0.1); border-left: 5px solid; padding: 15px; margin-bottom: 15px; border-radius: 5px; }
+        .result-item p { margin: 5px 0; font-size: 18px; line-height: 1.5; }
+        .result-item.correct-bg { border-left-color: #2ecc71; background: rgba(46, 204, 113, 0.15); }
+        .result-item.wrong-bg { border-left-color: #e74c3c; background: rgba(231, 76, 60, 0.15); }
+
+        /* BẢNG XẾP HẠNG */
+        .lb-board { width: 100%; max-width: 650px; background: rgba(15, 23, 42, 0.95); border: 4px solid #f1c40f; border-radius: 35px; padding: 40px; box-shadow: 0 0 35px rgba(241, 196, 15, 0.7); display: flex; flex-direction: column; align-items: center; }
+        .lb-title { font-family: 'Comic Sans MS', 'Arial Rounded MT Bold', sans-serif; font-size: 45px; color: #f1c40f; margin-bottom: 25px; text-shadow: 3px 3px 0px #d35400, -1px -1px 0px #fff; letter-spacing: 2px; text-transform: uppercase; }
+        #lb-list { width: 100%; max-height: 40vh; overflow-y: auto; padding-right: 10px; width: 100%; }
+        
+        .lb-item { background: rgba(255,255,255,0.1); border: 2px solid #3498db; border-radius: 18px; padding: 15px 25px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; font-size: 22px; font-weight: bold; transition: 0.3s; }
+        .lb-item:hover { transform: scale(1.03); background: rgba(255,255,255,0.2); }
+        .lb-rank { font-size: 26px; color: #f1c40f; width: 50px; text-shadow: 1px 1px 2px #000; }
+        .lb-name { flex-grow: 1; text-align: left; padding-left: 15px; }
+        .lb-score { color: #2ecc71; font-size: 24px; text-shadow: 1px 1px 2px #000; }
+        
+        .rank-1 { border-color: #f1c40f; background: rgba(241, 196, 15, 0.25); }
+        .rank-2 { border-color: #bdc3c7; background: rgba(189, 195, 199, 0.25); }
+        .rank-3 { border-color: #cd7f32; background: rgba(205, 127, 50, 0.25); }
+        .rank-1 .lb-rank { color: #fff; text-shadow: 0 0 10px #f1c40f; }
+
+        .btn-clear-lb { background: none; border: none; color: #e74c3c; text-decoration: underline; font-size: 16px; margin-top: 15px; cursor: pointer; transition: 0.2s; }
+        .btn-clear-lb:hover { color: #c0392b; transform: scale(1.1); }
+    </style>
+</head>
+<body>
+    <!-- THẺ AUDIO PHÁT NHẠC NỀN -->
+    <audio id="bg-music" src="nhac.mp3" loop></audio>
+
+    <div id="screen-video" class="screen active">
+        <button class="btn-skip-x" onclick="goToStartScreen()">✕</button>
+        <video id="intro-video" autoplay muted playsinline>
+            <source src="video/video1.mp4" type="video/mp4">
+        </video>
+    </div>
+
+    <div id="screen-game" class="screen">
+        <div class="game-container">
+            
+            <div id="start-screen-content" style="display: flex; flex-direction: column; align-items: center;">
+                <img src="images/logo.jpg" alt="Logo Game" class="start-logo" 
+                     onerror="this.outerHTML='<div class=\'logo-olympia\'><span class=\'text-duonglen\'>Đường lên đỉnh</span><span class=\'text-olympia\'>Olympia</span></div>'">
+                
+                <input type="text" id="player-name" placeholder="Nhập tên của bạn..." maxlength="20">
+                
+                <div style="display: flex; gap: 20px;">
+                    <div class="btn-start-box" onclick="startGame()">BẮT ĐẦU</div>
+                    <div class="btn-start-box" onclick="showLeaderboard('start')" style="background: linear-gradient(135deg, #9b51e0, #3498db);">XẾP HẠNG</div>
+                </div>
+            </div>
+
+            <div id="quiz-area" style="display: none; width: 100%;">
+                <div class="title-box">
+                    <h1 id="main-title">CHỌN 10 CÂU HỎI BẠN MUỐN THỬ SỨC</h1>
+                    <p id="question-text" style="display:none; font-size: 22px; margin-top: 15px; text-align: left; line-height: 1.4;"></p>
+                </div>
+
+                <div class="slots-container" id="slots-area">
+                    <div class="slot-box" id="slot-0" onclick="clearSlot(0)">Ô 1</div>
+                    <div class="slot-box" id="slot-1" onclick="clearSlot(1)">Ô 2</div>
+                    <div class="slot-box" id="slot-2" onclick="clearSlot(2)">Ô 3</div>
+                    <div class="slot-box" id="slot-3" onclick="clearSlot(3)">Ô 4</div>
+                    <div class="slot-box" id="slot-4" onclick="clearSlot(4)">Ô 5</div>
+                    <div class="slot-box" id="slot-5" onclick="clearSlot(5)">Ô 6</div>
+                    <div class="slot-box" id="slot-6" onclick="clearSlot(6)">Ô 7</div>
+                    <div class="slot-box" id="slot-7" onclick="clearSlot(7)">Ô 8</div>
+                    <div class="slot-box" id="slot-8" onclick="clearSlot(8)">Ô 9</div>
+                    <div class="slot-box" id="slot-9" onclick="clearSlot(9)">Ô 10</div>
+                </div>
+
+                <div class="points-container" id="points-select">
+                    <button class="btn-point" onclick="addPointToSlot(10)">10 Đ</button>
+                    <button class="btn-point" onclick="addPointToSlot(20)">20 Đ</button>
+                    <button class="btn-point" onclick="addPointToSlot(50)">50 Đ</button>
+                    <button class="btn-point" onclick="addPointToSlot(80)">80 Đ</button>
+                    <button class="btn-point" onclick="addPointToSlot(100)">100 Đ</button>
+                </div>
+
+                <div id="btn-confirm-play" class="btn-start-box" style="display: none; margin-top: 0;" onclick="startAnswering()">CHƠI NGAY</div>
+                <div class="options-grid" id="options-grid" style="display: none;"></div>
+            </div>
+
+            <div id="end-screen" style="display: none;" class="end-board">
+                <h1>CHÚC MỪNG!</h1>
+                <p>Bạn đã hoàn thành 10 câu hỏi</p>
+                <div class="huge-score"><span id="final-score-text">0</span> ĐIỂM</div>
+                <div class="btn-start-box" onclick="viewResults()">XEM KẾT QUẢ</div>
+            </div>
+
+            <div id="results-screen" style="display: none;" class="results-board">
+                <h2>KẾT QUẢ CHI TIẾT</h2>
+                <div id="results-list"></div>
+                <div style="display: flex; gap: 15px; margin-top: 10px;">
+                    <div class="btn-start-box" onclick="showLeaderboard('results')" style="background: linear-gradient(135deg, #9b51e0, #3498db);">XẾP HẠNG</div>
+                </div>
+            </div>
+
+            <div id="leaderboard-screen" style="display: none;" class="lb-board">
+                <div class="lb-title">BẢNG XẾP HẠNG</div>
+                <div id="lb-list"></div>
+                
+                <div style="display: flex; gap: 15px; margin-top: 20px;">
+                    <div class="btn-start-box" onclick="backFromLeaderboard()" style="background: linear-gradient(135deg, #34495e, #7f8c8d);">QUAY LẠI</div>
+                    <div class="btn-start-box" id="btn-lb-next" onclick="returnToStartScreen()">TIẾP THEO</div>
+                </div>
+                
+                <button class="btn-clear-lb" onclick="clearLeaderboard()">Xóa toàn bộ lịch sử thi đấu</button>
+            </div>
+
+        </div>
+    </div>
+
+<script>
+    const cauhoiData = `10|Kết quả của phép tính: 15 + 24 là bao nhiêu?|39|49|29|38|0
+10|Kết quả của phép tính: 50 - 18 là bao nhiêu?|32|22|42|38|0
+10|Kết quả của phép tính: 7 x 8 là bao nhiêu?|54|56|48|64|1
+10|Kết quả của phép tính: 45 : 5 là bao nhiêu?|7|8|9|10|2
+10|Kết quả của phép tính: 100 + 250 là bao nhiêu?|350|450|250|300|0
+10|Kết quả của phép tính: 80 - 35 là bao nhiêu?|55|45|35|65|1
+10|Kết quả của phép tính: 9 x 6 là bao nhiêu?|54|63|45|72|0
+10|Kết quả của phép tính: 64 : 8 là bao nhiêu?|6|7|8|9|2
+10|Kết quả của phép tính: 23 + 17 là bao nhiêu?|30|40|50|60|1
+10|Kết quả của phép tính: 12 x 3 là bao nhiêu?|36|24|48|32|0
+20|Tính giá trị biểu thức: 10 + 5 x 4 = ?|60|30|40|50|1
+20|Tính giá trị biểu thức: 40 - 20 : 2 = ?|10|30|20|0|1
+20|Tính giá trị biểu thức: (15 - 5) x 3 = ?|30|40|15|45|0
+20|Kết quả của phép tính: 144 : 12 = ?|11|12|13|14|1
+20|Tính giá trị biểu thức: 25 + 15 - 10 = ?|30|20|40|10|0
+20|Tính giá trị biểu thức: 8 x 5 : 4 = ?|10|15|20|5|0
+20|Tính giá trị biểu thức: 100 : 5 x 2 = ?|10|40|50|20|1
+20|Tìm x, biết: x - 15 = 25|10|30|40|50|2
+20|Tìm x, biết: x + 12 = 30|18|22|16|20|0
+20|Tìm x, biết: 3 x x = 27|7|8|9|10|2
+50|Tính giá trị biểu thức: 50 - 2 x (10 + 5) = ?|20|10|30|0|0
+50|Tính giá trị biểu thức: 64 : 8 + 7 x 3 = ?|28|29|30|31|1
+50|Mẹ có 50.000đ, mua 2 quyển vở mỗi quyển 15.000đ. Hỏi mẹ còn bao nhiêu tiền?|20.000đ|30.000đ|15.000đ|10.000đ|0
+50|Một hình chữ nhật có chiều dài 10cm, chiều rộng 5cm. Chu vi hình chữ nhật là?|15cm|30cm|50cm|45cm|1
+50|Tính giá trị biểu thức: (25 + 15) : (10 - 2) = ?|4|5|6|7|1
+50|Tìm x, biết: 2 x x + 10 = 30|5|10|15|20|1
+50|Tìm x, biết: 50 - x : 2 = 40|10|20|30|40|1
+50|Tính: 150 - (30 + 20) x 2 = ?|50|100|0|40|0
+50|Lớp 5A có 30 học sinh, 1/3 số học sinh là nữ. Hỏi có bao nhiêu học sinh nam?|10|15|20|25|2
+50|Tính: 100 : 4 x 5 - 25 = ?|100|0|50|75|0
+80|Tính giá trị biểu thức: 25 x 4 + 120 : 6 - 15 = ?|105|100|115|95|0
+80|Tìm x, biết: x : 4 + 15 = 35|60|80|70|90|1
+80|Một cửa hàng bán được 120kg gạo trong 3 ngày. Hỏi trong 5 ngày bán được bao nhiêu kg (mức bán như nhau)?|150kg|200kg|250kg|300kg|1
+80|Tính giá trị biểu thức: 88 : 4 x 3 - 16 = ?|50|48|52|46|0
+80|Tìm x, biết: (x + 5) x 4 = 100|15|20|25|30|1
+80|Tính: 3 x 3 + 4 x 4 = ?|14|25|7|24|1
+80|Trung bình cộng của 3 số là 15. Tổng của 3 số đó là bao nhiêu?|45|30|15|60|0
+80|Chu vi hình vuông là 36cm. Diện tích hình vuông đó là bao nhiêu?|81cm2|36cm2|64cm2|144cm2|0
+80|Tìm x, biết: 120 - 3 x x = 60|10|20|30|40|1
+80|Mua 3 kg táo hết 60.000đ. Hỏi mua 5 kg táo hết bao nhiêu tiền?|80.000đ|90.000đ|100.000đ|120.000đ|2
+100|Tính giá trị biểu thức: [(50 - 10) : 5 + 7] x 4 = ?|50|60|52|64|1
+100|Trung bình cộng của 4 số là 25. Biết tổng của 3 số đầu tiên là 70. Tìm số thứ tư?|20|25|30|35|2
+100|Tìm x, biết: (x - 5) x 6 = 180 : 3|15|20|10|25|0
+100|Mẹ mua 3kg cam và 2kg táo hết 110.000đ. Biết 1kg cam giá 20.000đ. Hỏi 1kg táo giá bao nhiêu?|25.000đ|20.000đ|30.000đ|35.000đ|0
+100|Năm nay tuổi bố gấp 4 lần tuổi con. Biết bố hơn con 30 tuổi. Tuổi của con là?|8|10|12|15|1
+100|Tính tổng các số từ 1 đến 10: 1 + 2 + 3 + ... + 10 = ?|50|55|60|45|1
+100|Một mảnh vườn hình chữ nhật có chu vi 100m, chiều dài hơn chiều rộng 10m. Diện tích là?|400m2|500m2|600m2|800m2|2
+100|Tìm x, biết: 250 : (x + 5) = 10|15|20|25|30|1
+100|Thùng 1 có 40 lít dầu, thùng 2 có số dầu bằng 3/4 thùng 1. Cả hai thùng có bao nhiêu lít?|60 lít|70 lít|80 lít|90 lít|1
+100|Tính: 5 x (12 - 4) + 60 : (3 + 2) = ?|48|50|52|54|2`;
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    let questionBank = [];
+    let sessionBank = []; 
+    let selectedSlots = Array(10).fill(null);
+    let currentQuestionIndex = 0;
+    let totalScore = 0;
+    let playHistory = []; 
+    let activeQuestionObj = null; 
+    let currentPlayerName = ""; 
+    let leaderboardReturnState = 'start'; 
+
+    const video = document.getElementById('intro-video');
+    const bgMusic = document.getElementById('bg-music');
+    let musicStarted = false;
+
+    // HÀM KHỞI ĐỘNG NHẠC KHI CÓ TƯƠNG TÁC
+    function startBgMusic() {
+        if (!musicStarted) {
+            bgMusic.volume = 0.5; // Đặt âm lượng 50%
+            bgMusic.play().then(() => {
+                musicStarted = true;
+            }).catch(err => console.log("Trình duyệt chờ tương tác để phát nhạc."));
+        }
+    }
+    // Gắn sự kiện click toàn trang để kích hoạt nhạc
+    document.body.addEventListener('click', startBgMusic);
+
+    function goToStartScreen() {
+        if (video) video.pause();
+        document.getElementById('screen-video').classList.remove('active');
+        document.getElementById('screen-game').classList.add('active');
+        loadQuestionBank();
+    }
+
+    video.onended = function() { goToStartScreen(); };
+
+    function loadQuestionBank() {
+        const lines = cauhoiData.split('\n');
+        questionBank = lines.map(line => {
+            const parts = line.split('|');
+            if (parts.length >= 7) {
+                return {
+                    point: parseInt(parts[0].trim()),
+                    q: parts[1].trim(),
+                    options: [parts[2].trim(), parts[3].trim(), parts[4].trim(), parts[5].trim()],
+                    correct: parseInt(parts[6].trim())
+                };
+            }
+        }).filter(q => q !== undefined);
+    }
+
+    function startGame() {
+        const nameInput = document.getElementById('player-name').value.trim();
+        if (!nameInput) {
+            alert("Vui lòng nhập tên của bạn trước khi bắt đầu trò chơi nhé!");
+            return;
+        }
+        currentPlayerName = nameInput;
+
+        document.getElementById('start-screen-content').style.display = 'none';
+        document.getElementById('quiz-area').style.display = 'block';
+        
+        sessionBank = JSON.parse(JSON.stringify(questionBank)); 
+        shuffleArray(sessionBank); 
+    }
+
+    function returnToStartScreen() {
+        selectedSlots = Array(10).fill(null);
+        currentQuestionIndex = 0;
+        totalScore = 0;
+        playHistory = [];
+        activeQuestionObj = null;
+        currentPlayerName = ""; 
+
+        document.getElementById('player-name').value = "";
+        for (let i = 0; i < 10; i++) updateSlotUI(i);
+
+        document.getElementById('leaderboard-screen').style.display = 'none';
+        document.getElementById('results-screen').style.display = 'none';
+        document.getElementById('end-screen').style.display = 'none';
+        document.getElementById('quiz-area').style.display = 'none';
+        
+        document.getElementById('main-title').innerText = "CHỌN 10 CÂU HỎI BẠN MUỐN THỬ SỨC";
+        document.getElementById('question-text').style.display = 'none';
+        document.getElementById('options-grid').style.display = 'none';
+        document.getElementById('slots-area').style.display = 'grid';
+        document.getElementById('points-select').style.display = 'flex';
+        document.getElementById('btn-confirm-play').style.display = 'none';
+        
+        document.getElementById('start-screen-content').style.display = 'flex';
+    }
+
+    function addPointToSlot(point) {
+        const emptyIndex = selectedSlots.indexOf(null);
+        if (emptyIndex !== -1) { 
+            selectedSlots[emptyIndex] = point;
+            updateSlotUI(emptyIndex);
+            checkFullSlots();
+        }
+    }
+
+    function clearSlot(index) {
+        if (selectedSlots[index] !== null) {
+            selectedSlots[index] = null;
+            updateSlotUI(index);
+            checkFullSlots();
+        }
+    }
+
+    function updateSlotUI(index) {
+        const slotBox = document.getElementById(`slot-${index}`);
+        if (selectedSlots[index] !== null) {
+            slotBox.innerText = `${selectedSlots[index]} Đ`;
+            slotBox.style.borderColor = "#2ecc71";
+            slotBox.style.background = "rgba(46, 204, 113, 0.2)";
+        } else {
+            slotBox.innerText = `Ô ${index + 1}`;
+            slotBox.style.borderColor = "#f1c40f";
+            slotBox.style.background = "rgba(255, 255, 255, 0.1)";
+        }
+    }
+
+    function checkFullSlots() {
+        const isFull = selectedSlots.every(val => val !== null);
+        document.getElementById('btn-confirm-play').style.display = isFull ? 'inline-block' : 'none';
+    }
+
+    function startAnswering() {
+        document.getElementById('slots-area').style.display = 'none';
+        document.getElementById('points-select').style.display = 'none';
+        document.getElementById('btn-confirm-play').style.display = 'none';
+        currentQuestionIndex = 0;
+        showQuestionAt(currentQuestionIndex);
+    }
+
+    function showQuestionAt(index) {
+        const point = selectedSlots[index];
+        let availableQuestions = sessionBank.filter(q => q.point === point);
+
+        if (availableQuestions.length === 0) {
+            let backup = questionBank.filter(q => q.point === point);
+            shuffleArray(backup);
+            sessionBank.push(...backup);
+            availableQuestions = backup;
+        }
+
+        activeQuestionObj = availableQuestions[0];
+        const removeIndex = sessionBank.findIndex(q => q.q === activeQuestionObj.q);
+        if (removeIndex > -1) sessionBank.splice(removeIndex, 1);
+
+        document.getElementById('main-title').innerText = `CÂU ${index + 1}: ${point} ĐIỂM`;
+        const qText = document.getElementById('question-text');
+        qText.innerText = activeQuestionObj.q;
+        qText.style.display = 'block';
+
+        const optionsGrid = document.getElementById('options-grid');
+        optionsGrid.innerHTML = '';
+        optionsGrid.style.display = 'grid';
+
+        let optionsWithIndex = activeQuestionObj.options.map((opt, i) => {
+            return { text: opt, isCorrect: (i === activeQuestionObj.correct) };
+        });
+        shuffleArray(optionsWithIndex);
+
+        optionsWithIndex.forEach((optObj, idx) => {
+            const btn = document.createElement('button');
+            btn.className = 'btn-option';
+            btn.innerText = `${String.fromCharCode(65 + idx)}. ${optObj.text}`;
+            btn.onclick = () => handleAnswer(optObj.isCorrect, point);
+            optionsGrid.appendChild(btn);
+        });
+    }
+
+    function handleAnswer(isCorrect, point) {
+        playHistory.push({
+            point: point,
+            q: activeQuestionObj.q,
+            isCorrect: isCorrect,
+            correctAnswerText: activeQuestionObj.options[activeQuestionObj.correct]
+        });
+
+        if (isCorrect) { totalScore += point; }
+        currentQuestionIndex++;
+
+        if (currentQuestionIndex < 10) {
+            showQuestionAt(currentQuestionIndex);
+        } else {
+            saveScoreToLeaderboard(); 
+            document.getElementById('quiz-area').style.display = 'none';
+            document.getElementById('end-screen').style.display = 'flex';
+            document.getElementById('final-score-text').innerText = totalScore;
+        }
+    }
+
+    function viewResults() {
+        document.getElementById('end-screen').style.display = 'none';
+        document.getElementById('results-screen').style.display = 'flex';
+        
+        const list = document.getElementById('results-list');
+        list.innerHTML = '';
+        
+        playHistory.forEach((item, index) => {
+            const bgClass = item.isCorrect ? 'correct-bg' : 'wrong-bg';
+            const statusText = item.isCorrect ? `<span style="color:#2ecc71; font-weight:bold;">Đúng (+${item.point} Điểm)</span>` : `<span style="color:#e74c3c; font-weight:bold;">Sai (0 Điểm)</span>`;
+            
+            list.innerHTML += `
+                <div class="result-item ${bgClass}">
+                    <p><strong>Câu ${index + 1} (${item.point} Điểm):</strong> ${item.q}</p>
+                    <p><strong>Kết quả:</strong> ${statusText}</p>
+                    <p><strong>Đáp án đúng:</strong> ${item.correctAnswerText}</p>
+                </div>
+            `;
+        });
+    }
+
+    function saveScoreToLeaderboard() {
+        let lb = JSON.parse(localStorage.getItem('olympia_lb')) || [];
+        lb.push({ name: currentPlayerName, score: totalScore });
+        lb.sort((a, b) => b.score - a.score);
+        localStorage.setItem('olympia_lb', JSON.stringify(lb));
+    }
+
+    function showLeaderboard(source) {
+        leaderboardReturnState = source; 
+        
+        document.getElementById('start-screen-content').style.display = 'none';
+        document.getElementById('results-screen').style.display = 'none';
+        
+        document.getElementById('leaderboard-screen').style.display = 'flex';
+        
+        const btnNext = document.getElementById('btn-lb-next');
+        if(source === 'start') {
+            btnNext.style.display = 'none'; 
+        } else {
+            btnNext.style.display = 'block'; 
+        }
+
+        renderLeaderboardList();
+    }
+
+    function renderLeaderboardList() {
+        const lbList = document.getElementById('lb-list');
+        lbList.innerHTML = '';
+        
+        let lb = JSON.parse(localStorage.getItem('olympia_lb')) || [];
+        
+        if (lb.length === 0) {
+            lbList.innerHTML = '<p style="text-align:center; font-size: 20px; margin-top:20px;">Chưa có dữ liệu xếp hạng.</p>';
+            return;
+        }
+
+        lb.forEach((item, index) => {
+            let rankClass = '';
+            if (index === 0) rankClass = 'rank-1';
+            else if (index === 1) rankClass = 'rank-2';
+            else if (index === 2) rankClass = 'rank-3';
+
+            lbList.innerHTML += `
+                <div class="lb-item ${rankClass}">
+                    <div class="lb-rank">#${index + 1}</div>
+                    <div class="lb-name">${item.name}</div>
+                    <div class="lb-score">${item.score} Đ</div>
+                </div>
+            `;
+        });
+    }
+
+    function clearLeaderboard() {
+        if(confirm("Bạn có chắc chắn muốn xóa toàn bộ lịch sử người chơi không?")) {
+            localStorage.removeItem('olympia_lb');
+            renderLeaderboardList();
+        }
+    }
+
+    function backFromLeaderboard() {
+        document.getElementById('leaderboard-screen').style.display = 'none';
+        if (leaderboardReturnState === 'start') {
+            document.getElementById('start-screen-content').style.display = 'flex';
+        } else {
+            document.getElementById('results-screen').style.display = 'flex';
+        }
+    }
+</script>
+</body>
+</html>
